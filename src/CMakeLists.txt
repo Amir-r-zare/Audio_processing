@@ -1,6 +1,3 @@
-# src/CMakeLists.txt
-file(GLOB SRC_FILES *.cpp)
-
 add_executable(MyApp ${SRC_FILES})
 
 target_include_directories(MyApp PRIVATE
@@ -16,6 +13,7 @@ target_link_libraries(MyApp PRIVATE
     pthread
 )
 
+file(GLOB SRC_FILES *.cpp)
 
 add_executable(MyProject
     main.cpp
