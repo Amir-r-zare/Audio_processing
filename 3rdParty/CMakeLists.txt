@@ -1,26 +1,18 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(MyProject LANGUAGES CXX)
-
+project(wav-aec)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-
 find_package(Qt5 REQUIRED COMPONENTS Core)
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-add_definitions("-DWEBRTC_LINUX -DWEBRTC_POSIX -DWEBRTC_NS_FLOAT")
 
 # Output directory for static libs (.a)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+
+
+add_definitions("-DWEBRTC_LINUX -DWEBRTC_POSIX -DWEBRTC_NS_FLOAT")
+#-DWEBRTC_UNTRUSTED_DELAY
 
 include_directories(
     webrtc
@@ -197,17 +189,8 @@ set(WEBRTC_SRC_
     system_wrappers/source/rw_lock_posix.cc
     system_wrappers/source/trace_impl.cc
     system_wrappers/source/trace_posix.cc
-    ../../webrtc-audioproc.cpp
+    ../../../src/webrtc-audioproc.cpp
 )
-
-
-#add_executable(MyProject
-#  main.cpp
-#)
-
-#add_executable(MyProject src/webrtc-audioproc.cpp)
-
-#target_link_libraries(MyProject Qt5::Core)
 
 function(prepend_path var prefix)
    set(listVar "")
@@ -220,4 +203,17 @@ endfunction(prepend_path)
 prepend_path(WEBRTC_SRC webrtc/webrtc ${WEBRTC_SRC_})
 
 # Define a static library from WebRTC sources
-#add_library(webrtc_aec STATIC ${WEBRTC_SRC})
+add_library(webrtc_aec STATIC ${WEBRTC_SRC})
+
+# You can optionally install it:
+# install(TARGETS webrtc_aec ARCHIVE DESTINATION lib)
+
+#add_executable(webrtc-audioproc webrtc-audioproc.cpp ${WEBRTC_SRC})
+#target_link_libraries(webrtc-audioproc gflags pthread)
+
+#----------------------------------------------------------------
+
+
+
+
+
