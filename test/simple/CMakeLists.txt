@@ -18,6 +18,7 @@ target_include_directories(SimpleTest PRIVATE
 target_link_libraries(SimpleTest PRIVATE
     webrtc_aec
     pthread
+
 )
 
 
