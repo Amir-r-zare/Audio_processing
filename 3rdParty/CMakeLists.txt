@@ -189,7 +189,6 @@ set(WEBRTC_SRC_
     system_wrappers/source/rw_lock_posix.cc
     system_wrappers/source/trace_impl.cc
     system_wrappers/source/trace_posix.cc
-#    ../../../src/webrtc-audioproc.cpp
 )
 
 function(prepend_path var prefix)
