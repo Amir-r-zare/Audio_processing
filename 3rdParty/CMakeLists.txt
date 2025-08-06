@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(wav-aec)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+project(Audio_Processing)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(Qt5 REQUIRED COMPONENTS Core)
@@ -9,10 +9,8 @@ find_package(Qt5 REQUIRED COMPONENTS Core)
 # Output directory for static libs (.a)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-
-
 add_definitions("-DWEBRTC_LINUX -DWEBRTC_POSIX -DWEBRTC_NS_FLOAT")
-#-DWEBRTC_UNTRUSTED_DELAY
+
 
 include_directories(
     webrtc

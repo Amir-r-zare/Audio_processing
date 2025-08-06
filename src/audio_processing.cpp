@@ -11,6 +11,7 @@
 #include <cstring>
 #include <variant>
 
+
 audio_processing::audio_processing()
     : sample_rate_(16000)
     , system_delay_ms_(0)
@@ -367,4 +368,8 @@ float audio_processing::getSpeechProbability() const {
         return 0.0f;
     }
     return hasVoice() ? 1.0f : 0.0f;
+}
+
+int main(){
+
 }

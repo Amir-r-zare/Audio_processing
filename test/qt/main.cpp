@@ -23,7 +23,7 @@ private slots:
         std::cout << "Client connected!" << std::endl;
 
         audio_processing aec_qt;
-        aec_qt.setConfig(audio_processing::SAMPLE_RATE, ConfigVariant(48000));
+        aec_qt.setConfig(audio_processing::SAMPLE_RATE, 48000);
         aec_qt.start();
         std::cout << "[Server] audio_processing started." << std::endl;
 

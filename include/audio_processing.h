@@ -8,9 +8,9 @@
 #include <memory>
 #include <variant>
 
-using namespace std;
-// Constants
+
 #define WEBRTC_AEC3_NUM_CHANNELS 1
+
 
 class audio_processing {
 public:
@@ -53,7 +53,7 @@ public:
         kHighLikelihood = 2
     };
 
-    bool setConfig(int configId, variant<int, bool, float> value);
+    bool setConfig(int configId, std::variant<int, bool, float> value);
     void start();
 
     // Original process method for int16_t vectors

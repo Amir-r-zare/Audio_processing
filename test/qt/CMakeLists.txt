@@ -9,20 +9,24 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+#add_definitions("-DWEBRTC_LINUX -DWEBRTC_POSIX -DWEBRTC_NS_FLOAT")
+
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
 )
 
 find_package(Qt5 REQUIRED COMPONENTS Core Network)
 
+file(GLOB SRC_FILES *.cpp)
+
 add_executable(QtTest
-    main.cpp
+    ${SRC_FILES}
 )
 
-target_include_directories(QtTest PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-)
+#target_include_directories(QtTest PRIVATE
+#    ${CMAKE_SOURCE_DIR}/include
+#    ${CMAKE_SOURCE_DIR}/src
+#)
 
 
 target_link_libraries(QtTest PRIVATE
