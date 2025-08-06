@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(SimpleTest LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-#add_definitions("-DWEBRTC_LINUX -DWEBRTC_POSIX -DWEBRTC_NS_FLOAT")
+set(CMAKE_CXX_STANDARD 17)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
@@ -14,10 +12,6 @@ file(GLOB SRC_FILES *.cpp)
 add_executable(SimpleTest
     ${SRC_FILES}
 )
-
-#target_include_directories(SimpleTest PRIVATE
-#    ${CMAKE_SOURCE_DIR}/include
-#)
 
 target_link_libraries(SimpleTest PRIVATE
     Audio_Processing

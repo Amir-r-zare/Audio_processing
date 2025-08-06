@@ -12,6 +12,7 @@
 #include <variant>
 
 
+
 audio_processing::audio_processing()
     : sample_rate_(16000)
     , system_delay_ms_(0)
@@ -44,6 +45,7 @@ audio_processing::~audio_processing() {
     if (stream_config_in_) delete static_cast<webrtc::StreamConfig*>(stream_config_in_);
     if (stream_config_out_) delete static_cast<webrtc::StreamConfig*>(stream_config_out_);
     if (audio_processor_) delete static_cast<webrtc::AudioProcessing*>(audio_processor_);
+
 }
 
 bool audio_processing::setConfig(int configId, std::variant<int, bool, float> value) {
@@ -250,19 +252,19 @@ void audio_processing::process(const std::vector<int16_t>& near_in,
     while (samples_processed < total_samples) {
         const size_t samples_to_process = std::min(num_chunk_samples_, total_samples - samples_processed);
 
-        // Convert int16_t to float
+
         for (size_t i = 0; i < samples_to_process; ++i) {
             near_float_data_[i] = static_cast<float>(near_in[samples_processed + i]) / 32768.0f;
             far_float_data_[i] = static_cast<float>(far_in[samples_processed + i]) / 32768.0f;
         }
 
-        // Copy to channel buffers
+
         std::copy(near_float_data_.begin(), near_float_data_.begin() + samples_to_process,
                   near_buf->channels()[0]);
         std::copy(far_float_data_.begin(), far_float_data_.begin() + samples_to_process,
                   far_buf->channels()[0]);
 
-        // Process reverse stream (far-end/reference)
+
         int result = processor->ProcessReverseStream(
             far_buf->channels(), *stream_in, *stream_out,
             far_buf->channels());
@@ -349,7 +351,6 @@ bool audio_processing::hasVoice() const {
     }
 
     webrtc::AudioProcessing* processor = static_cast<webrtc::AudioProcessing*>(audio_processor_);
-    // Use the older API to get voice detection results
     return processor->voice_detection()->stream_has_voice();
 }
 
@@ -368,8 +369,4 @@ float audio_processing::getSpeechProbability() const {
         return 0.0f;
     }
     return hasVoice() ? 1.0f : 0.0f;
-}
-
-int main(){
-
 }

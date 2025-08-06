@@ -12,6 +12,7 @@
 #define WEBRTC_AEC3_NUM_CHANNELS 1
 
 
+class AudioProcessingPrivate;
 class audio_processing {
 public:
     audio_processing();
