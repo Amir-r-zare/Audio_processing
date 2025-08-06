@@ -1,9 +1,11 @@
-#ifndef WEBRTC_AEC3_H
-#define WEBRTC_AEC3_H
+#ifndef AUDIO_PROCESSING_H
+#define AUDIO_PROCESSING_H
 
 #include <vector>
 #include <cstdint>
-#include <variant>
+#include <stdexcept>
+#include <algorithm>
+#include <memory>
 
 // Constants
 #define WEBRTC_AEC3_NUM_CHANNELS 1
@@ -150,4 +152,4 @@ bool WebrtcAEC3::processRawData(const ByteContainer& nearData, const ByteContain
     );
 }
 
-#endif // WEBRTC_AEC3_H
+#endif // AUDIO_PROCESSING_H

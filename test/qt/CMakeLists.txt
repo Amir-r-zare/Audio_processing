@@ -29,7 +29,7 @@ target_include_directories(QtTest PRIVATE
 target_link_libraries(QtTest PRIVATE
     Qt5::Core
     Qt5::Network
-    webrtc_aec
+    Audio_Processing
     pthread
 
 )

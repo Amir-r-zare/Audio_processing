@@ -189,7 +189,7 @@ set(WEBRTC_SRC_
     system_wrappers/source/rw_lock_posix.cc
     system_wrappers/source/trace_impl.cc
     system_wrappers/source/trace_posix.cc
-    ../../../src/webrtc-audioproc.cpp
+#    ../../../src/webrtc-audioproc.cpp
 )
 
 function(prepend_path var prefix)
@@ -203,15 +203,9 @@ endfunction(prepend_path)
 prepend_path(WEBRTC_SRC webrtc/webrtc ${WEBRTC_SRC_})
 
 # Define a static library from WebRTC sources
-add_library(webrtc_aec STATIC ${WEBRTC_SRC})
+add_library(Audio_Processing STATIC ${WEBRTC_SRC})
 
-# You can optionally install it:
-# install(TARGETS webrtc_aec ARCHIVE DESTINATION lib)
 
-#add_executable(webrtc-audioproc webrtc-audioproc.cpp ${WEBRTC_SRC})
-#target_link_libraries(webrtc-audioproc gflags pthread)
-
-#----------------------------------------------------------------
 
 
 

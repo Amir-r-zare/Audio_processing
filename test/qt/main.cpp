@@ -2,7 +2,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <iostream>
-#include "WebrtcAEC3.h"
+#include "audio_processing.h"
 
 class SimpleServer : public QObject {
 //    Q_OBJECT

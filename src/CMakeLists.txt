@@ -16,6 +16,6 @@ target_include_directories(VoiceApp PRIVATE
 )
 
 target_link_libraries(VoiceApp PRIVATE
-    webrtc_aec
+    Audio_Processing
     pthread
 )
