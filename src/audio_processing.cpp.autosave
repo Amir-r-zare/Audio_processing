@@ -267,7 +267,6 @@ void audio_processing::process(const std::vector<int16_t>& near_in,
             far_buf->channels());
 
         if (result != webrtc::AudioProcessing::kNoError) {
-            // Handle error
             continue;
         }
 
@@ -277,7 +276,6 @@ void audio_processing::process(const std::vector<int16_t>& near_in,
             out_buf->channels());
 
         if (result != webrtc::AudioProcessing::kNoError) {
-            // Handle error
             continue;
         }
 
@@ -326,7 +324,6 @@ bool audio_processing::processRawBytes(const uint8_t* nearBytes, size_t nearByte
     nearSamples.resize(minSize);
     farSamples.resize(minSize);
 
-    // Process the audio
     process(nearSamples, farSamples, out);
     return true;
 }
@@ -348,7 +345,6 @@ bool audio_processing::hasVoice() const {
     }
 
     webrtc::AudioProcessing* processor = static_cast<webrtc::AudioProcessing*>(audio_processor_);
-    // Use the older API to get voice detection results
     return processor->voice_detection()->stream_has_voice();
 }
 
@@ -358,7 +354,6 @@ bool audio_processing::hasEcho() const {
     }
 
     webrtc::AudioProcessing* processor = static_cast<webrtc::AudioProcessing*>(audio_processor_);
-    // Check if echo cancellation is processing
     return processor->echo_cancellation()->is_enabled();
 }
 
