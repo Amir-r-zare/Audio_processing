@@ -202,7 +202,6 @@ endfunction(prepend_path)
 
 prepend_path(WEBRTC_SRC webrtc/webrtc ${WEBRTC_SRC_})
 
-# Define a static library from WebRTC sources
 add_library(Audio_Processing STATIC ${WEBRTC_SRC})
 
 

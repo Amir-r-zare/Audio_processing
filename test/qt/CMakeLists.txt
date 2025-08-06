@@ -9,10 +9,8 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-add_definitions("-DWEBRTC_LINUX -DWEBRTC_POSIX -DWEBRTC_NS_FLOAT")
-
 include_directories(
-    ../../include
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 find_package(Qt5 REQUIRED COMPONENTS Core Network)
@@ -23,6 +21,7 @@ add_executable(QtTest
 
 target_include_directories(QtTest PRIVATE
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
 )
 
 
@@ -31,5 +30,4 @@ target_link_libraries(QtTest PRIVATE
     Qt5::Network
     Audio_Processing
     pthread
-
 )

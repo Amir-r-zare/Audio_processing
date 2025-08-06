@@ -10,12 +10,9 @@
 #include <stdexcept>
 #include <cstring>
 
+//using webrtc::AudioProcessing;
 
-
-// Fix 1: Use the correct Config class
-using webrtc::AudioProcessing;
-
-WebrtcAEC3::WebrtcAEC3()
+audio_processing::audio_processing()
     : sample_rate_(16000)
     , system_delay_ms_(0)
     , noise_suppression_level_(NS_LEVEL_MODERATE)
@@ -40,7 +37,7 @@ WebrtcAEC3::WebrtcAEC3()
     , is_started_(false) {
 }
 
-WebrtcAEC3::~WebrtcAEC3() {
+audio_processing::~audio_processing() {
     if (near_chan_buf_) delete near_chan_buf_;
     if (far_chan_buf_) delete far_chan_buf_;
     if (out_chan_buf_) delete out_chan_buf_;
@@ -49,7 +46,7 @@ WebrtcAEC3::~WebrtcAEC3() {
     if (audio_processor_) delete audio_processor_;
 }
 
-bool WebrtcAEC3::setConfig(int configId, ConfigVariant value) {
+bool audio_processing::setConfig(int configId, ConfigVariant value) {
     switch (configId) {
         case SAMPLE_RATE:
             sample_rate_ = value.as_int();
@@ -96,21 +93,18 @@ bool WebrtcAEC3::setConfig(int configId, ConfigVariant value) {
     return true;
 }
 
-void WebrtcAEC3::start() {
+void audio_processing::start() {
     if (is_started_) return;
 
-    // Create AudioProcessing instance with older API
-    audio_processor_ = AudioProcessing::Create();
+    audio_processor_ = webrtc::AudioProcessing::Create();
     if (!audio_processor_) {
         return;
     }
 
     configureProcessing();
 
-    // Calculate samples per chunk (10ms worth of samples)
     num_chunk_samples_ = sample_rate_ / 100;
 
-    // Create stream configurations
     stream_config_in_ = new webrtc::StreamConfig(sample_rate_, WEBRTC_AEC3_NUM_CHANNELS);
     stream_config_out_ = new webrtc::StreamConfig(sample_rate_, WEBRTC_AEC3_NUM_CHANNELS);
 
@@ -127,10 +121,9 @@ void WebrtcAEC3::start() {
     is_started_ = true;
 }
 
-void WebrtcAEC3::configureProcessing() {
+void audio_processing::configureProcessing() {
     if (!audio_processor_) return;
 
-    // Use the older WebRTC API - configure each component individually
 
     // Configure Echo Cancellation (AEC)
     if (enable_aec_) {
@@ -147,7 +140,7 @@ void WebrtcAEC3::configureProcessing() {
         audio_processor_->echo_cancellation()->Enable(false);
     }
 
-    // Configure Automatic Gain Control (AGC)
+    // Configure AGC
     if (enable_agc_) {
         audio_processor_->gain_control()->Enable(true);
         webrtc::GainControl::Mode agc_webrtc_mode;
@@ -169,7 +162,7 @@ void WebrtcAEC3::configureProcessing() {
         audio_processor_->gain_control()->Enable(false);
     }
 
-    // Configure Noise Suppression
+    // Configure NS
     if (enable_noise_suppression_) {
         audio_processor_->noise_suppression()->Enable(true);
         webrtc::NoiseSuppression::Level ns_level;
@@ -194,14 +187,14 @@ void WebrtcAEC3::configureProcessing() {
         audio_processor_->noise_suppression()->Enable(false);
     }
 
-    // Configure High-pass Filter
+    // Configure HPF
     if (enable_hp_filter_) {
         audio_processor_->high_pass_filter()->Enable(true);
     } else {
         audio_processor_->high_pass_filter()->Enable(false);
     }
 
-    // Configure Voice Activity Detection
+    // Configure Voice Detection
     if (enable_voice_detection_) {
         audio_processor_->voice_detection()->Enable(true);
         webrtc::VoiceDetection::Likelihood vad_likelihood;
@@ -229,7 +222,7 @@ void WebrtcAEC3::configureProcessing() {
     }
 }
 
-void WebrtcAEC3::process(const std::vector<int16_t>& near_in,
+void audio_processing::process(const std::vector<int16_t>& near_in,
                         const std::vector<int16_t>& far_in,
                         std::vector<int16_t>& out) {
     if (!is_started_ || !audio_processor_) {
@@ -265,7 +258,7 @@ void WebrtcAEC3::process(const std::vector<int16_t>& near_in,
             far_chan_buf_->channels(), *stream_config_in_, *stream_config_out_,
             far_chan_buf_->channels());
 
-        if (result != AudioProcessing::kNoError) {
+        if (result != webrtc::AudioProcessing::kNoError) {
             // Handle error
             continue;
         }
@@ -275,7 +268,7 @@ void WebrtcAEC3::process(const std::vector<int16_t>& near_in,
             near_chan_buf_->channels(), *stream_config_in_, *stream_config_out_,
             out_chan_buf_->channels());
 
-        if (result != AudioProcessing::kNoError) {
+        if (result != webrtc::AudioProcessing::kNoError) {
             // Handle error
             continue;
         }
@@ -292,7 +285,7 @@ void WebrtcAEC3::process(const std::vector<int16_t>& near_in,
     }
 }
 
-bool WebrtcAEC3::processRawBytes(const uint8_t* nearBytes, size_t nearByteCount,
+bool audio_processing::processRawBytes(const uint8_t* nearBytes, size_t nearByteCount,
                                 const uint8_t* farBytes, size_t farByteCount,
                                 std::vector<int16_t>& out) {
     if (!nearBytes || !farBytes || nearByteCount == 0 || farByteCount == 0) {
@@ -330,7 +323,7 @@ bool WebrtcAEC3::processRawBytes(const uint8_t* nearBytes, size_t nearByteCount,
     return true;
 }
 
-void WebrtcAEC3::validateInputSizes(const std::vector<int16_t>& near_in,
+void audio_processing::validateInputSizes(const std::vector<int16_t>& near_in,
                                    const std::vector<int16_t>& far_in) const {
     if (near_in.size() != far_in.size()) {
         throw std::invalid_argument("Near and far input sizes must match");
@@ -341,7 +334,7 @@ void WebrtcAEC3::validateInputSizes(const std::vector<int16_t>& near_in,
     }
 }
 
-bool WebrtcAEC3::hasVoice() const {
+bool audio_processing::hasVoice() const {
     if (!audio_processor_ || !enable_voice_detection_) {
         return false;
     }
@@ -350,21 +343,18 @@ bool WebrtcAEC3::hasVoice() const {
     return audio_processor_->voice_detection()->stream_has_voice();
 }
 
-bool WebrtcAEC3::hasEcho() const {
+bool audio_processing::hasEcho() const {
     if (!audio_processor_ || !enable_aec_) {
         return false;
     }
 
-    // This is a simplified implementation for older API
     // Check if echo cancellation is processing
     return audio_processor_->echo_cancellation()->is_enabled();
 }
 
-float WebrtcAEC3::getSpeechProbability() const {
+float audio_processing::getSpeechProbability() const {
     if (!audio_processor_ || !enable_voice_detection_) {
         return 0.0f;
     }
-
-    // For older API, return a simple binary probability
     return hasVoice() ? 1.0f : 0.0f;
 }

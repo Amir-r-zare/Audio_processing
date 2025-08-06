@@ -3,34 +3,24 @@
 #include <vector>
 
 int main() {
-    try {
-        WebrtcAEC3 aec;
+
+
+        audio_processing aec_simple;
 
         // simple configuration
-        aec.setConfig(WebrtcAEC3::SAMPLE_RATE, 16000);
-        aec.setConfig(WebrtcAEC3::ENABLE_AEC, true);
-        aec.setConfig(WebrtcAEC3::ENABLE_NOISE_SUPPRESSION, true);
-        aec.setConfig(WebrtcAEC3::NOISE_SUPPRESSION_LEVEL, WebrtcAEC3::NS_LEVEL_MODERATE);
-//        aec.setConfig(WebrtcAEC3::AGC_MODE, ConfigVariant(5));
-        aec.start();
+        aec_simple.setConfig(audio_processing::SAMPLE_RATE, 16000);
+        aec_simple.setConfig(audio_processing::ENABLE_AEC, true);
+        aec_simple.setConfig(audio_processing::ENABLE_NOISE_SUPPRESSION, true);
+        aec_simple.setConfig(audio_processing::NOISE_SUPPRESSION_LEVEL, audio_processing::NS_LEVEL_MODERATE);
+        aec_simple.start();
 
         // simple initialize
         std::vector<int16_t> near(160, 0);
         std::vector<int16_t> far(160, 0);
         std::vector<int16_t> out;
 
-        aec.process(near, far, out);
+        aec_simple.process(near, far, out);
 
         std::cout << "Simple processing test completed. Output size: " << out.size() << std::endl;
         return 0;
-    } catch (const std::exception& e) {
-        std::cerr << "Error during test: " << e.what() << std::endl;
-        return 1;
-    }
 }
-
-
-//int main()
-//{
-//    return 1;
-//}
