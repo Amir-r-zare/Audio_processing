@@ -199,12 +199,9 @@ endfunction(prepend_path)
 
 prepend_path(WEBRTC_SRC webrtc/webrtc ${WEBRTC_SRC_})
 
+add_library(AudioProcessingLin STATIC ${WEBRTC_SRC})
 
-add_library(WebRTC_Audio STATIC ${WEBRTC_SRC})
-#add_library(Audio_Processing STATIC ${WEBRTC_SRC})
-
-target_link_libraries(WebRTC_Audio PUBLIC pthread)
-
+target_link_libraries(AudioProcessingLin PUBLIC pthread)
 
 
 

@@ -5,7 +5,6 @@
 
 int main() {
 
-
         AudioProcessing aec_simple;
 
         // simple configuration
