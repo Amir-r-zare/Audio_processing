@@ -6,13 +6,13 @@
 int main() {
 
 
-        audio_processing aec_simple;
+        AudioProcessing aec_simple;
 
         // simple configuration
-        aec_simple.setConfig(audio_processing::SAMPLE_RATE, 16000);
-        aec_simple.setConfig(audio_processing::ENABLE_AEC, true);
-        aec_simple.setConfig(audio_processing::ENABLE_NOISE_SUPPRESSION, true);
-        aec_simple.setConfig(audio_processing::NOISE_SUPPRESSION_LEVEL, audio_processing::NS_LEVEL_MODERATE);
+        aec_simple.setConfig(AudioProcessing::SAMPLE_RATE, 16000);
+        aec_simple.setConfig(AudioProcessing::ENABLE_AEC, true);
+        aec_simple.setConfig(AudioProcessing::ENABLE_NOISE_SUPPRESSION, true);
+        aec_simple.setConfig(AudioProcessing::NOISE_SUPPRESSION_LEVEL, AudioProcessing::NS_LEVEL_MODERATE);
         aec_simple.start();
 
         // simple initialize

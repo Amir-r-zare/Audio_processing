@@ -13,7 +13,7 @@
 
 
 
-audio_processing::audio_processing()
+AudioProcessing::AudioProcessing()
     : sample_rate_(16000)
     , system_delay_ms_(0)
     , noise_suppression_level_(NS_LEVEL_MODERATE)
@@ -38,7 +38,7 @@ audio_processing::audio_processing()
     , is_started_(false) {
 }
 
-audio_processing::~audio_processing() {
+AudioProcessing::~AudioProcessing() {
     if (near_chan_buf_) delete static_cast<webrtc::ChannelBuffer<float>*>(near_chan_buf_);
     if (far_chan_buf_) delete static_cast<webrtc::ChannelBuffer<float>*>(far_chan_buf_);
     if (out_chan_buf_) delete static_cast<webrtc::ChannelBuffer<float>*>(out_chan_buf_);
@@ -48,7 +48,7 @@ audio_processing::~audio_processing() {
 
 }
 
-bool audio_processing::setConfig(int configId, std::variant<int, bool, float> value) {
+bool AudioProcessing::setConfig(int configId, std::variant<int, bool, float> value) {
     switch (configId) {
         case SAMPLE_RATE:
             sample_rate_ = std::get<int>(value);
@@ -92,10 +92,11 @@ bool audio_processing::setConfig(int configId, std::variant<int, bool, float> va
         default:
             return false;
     }
+
     return true;
 }
 
-void audio_processing::start() {
+void AudioProcessing::start() {
     if (is_started_) return;
 
     audio_processor_ = webrtc::AudioProcessing::Create();
@@ -123,7 +124,7 @@ void audio_processing::start() {
     is_started_ = true;
 }
 
-void audio_processing::configureProcessing() {
+void AudioProcessing::configureProcessing() {
     if (!audio_processor_) return;
 
     webrtc::AudioProcessing* processor = static_cast<webrtc::AudioProcessing*>(audio_processor_);
@@ -225,7 +226,7 @@ void audio_processing::configureProcessing() {
     }
 }
 
-void audio_processing::process(const std::vector<int16_t>& near_in,
+void AudioProcessing::process(const std::vector<int16_t>& near_in,
                         const std::vector<int16_t>& far_in,
                         std::vector<int16_t>& out) {
     if (!is_started_ || !audio_processor_) {
@@ -296,7 +297,7 @@ void audio_processing::process(const std::vector<int16_t>& near_in,
     }
 }
 
-bool audio_processing::processRawBytes(const uint8_t* nearBytes, size_t nearByteCount,
+bool AudioProcessing::processRawBytes(const uint8_t* nearBytes, size_t nearByteCount,
                                 const uint8_t* farBytes, size_t farByteCount,
                                 std::vector<int16_t>& out) {
     if (!nearBytes || !farBytes || nearByteCount == 0 || farByteCount == 0) {
@@ -334,7 +335,7 @@ bool audio_processing::processRawBytes(const uint8_t* nearBytes, size_t nearByte
     return true;
 }
 
-void audio_processing::validateInputSizes(const std::vector<int16_t>& near_in,
+void AudioProcessing::validateInputSizes(const std::vector<int16_t>& near_in,
                                    const std::vector<int16_t>& far_in) const {
     if (near_in.size() != far_in.size()) {
         throw std::invalid_argument("Near and far input sizes must match");
@@ -345,7 +346,7 @@ void audio_processing::validateInputSizes(const std::vector<int16_t>& near_in,
     }
 }
 
-bool audio_processing::hasVoice() const {
+bool AudioProcessing::hasVoice() const {
     if (!audio_processor_ || !enable_voice_detection_) {
         return false;
     }
@@ -354,7 +355,7 @@ bool audio_processing::hasVoice() const {
     return processor->voice_detection()->stream_has_voice();
 }
 
-bool audio_processing::hasEcho() const {
+bool AudioProcessing::hasEcho() const {
     if (!audio_processor_ || !enable_aec_) {
         return false;
     }
@@ -364,7 +365,7 @@ bool audio_processing::hasEcho() const {
     return processor->echo_cancellation()->is_enabled();
 }
 
-float audio_processing::getSpeechProbability() const {
+float AudioProcessing::getSpeechProbability() const {
     if (!audio_processor_ || !enable_voice_detection_) {
         return 0.0f;
     }

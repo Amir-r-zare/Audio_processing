@@ -22,8 +22,8 @@ private slots:
         QTcpSocket* client = server.nextPendingConnection();
         std::cout << "Client connected!" << std::endl;
 
-        audio_processing aec_qt;
-        aec_qt.setConfig(audio_processing::SAMPLE_RATE, 48000);
+        AudioProcessing aec_qt;
+        aec_qt.setConfig(AudioProcessing::SAMPLE_RATE, 48000);
         aec_qt.start();
         std::cout << "[Server] audio_processing started." << std::endl;
 

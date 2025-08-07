@@ -13,10 +13,10 @@
 
 
 class AudioProcessingPrivate;
-class audio_processing {
+class AudioProcessing {
 public:
-    audio_processing();
-    ~audio_processing();
+    AudioProcessing();
+    ~AudioProcessing();
 
     // Configuration IDs
     enum ConfigId {
@@ -115,7 +115,7 @@ private:
 
 // Template method implementation (must be in header for templates)
 template<typename ByteContainer>
-bool audio_processing::processRawData(const ByteContainer& nearData, const ByteContainer& farData,
+bool AudioProcessing::processRawData(const ByteContainer& nearData, const ByteContainer& farData,
                                std::vector<int16_t>& out) {
     return processRawBytes(
         reinterpret_cast<const uint8_t*>(nearData.constData()), nearData.size(),
