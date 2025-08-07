@@ -1,3 +1,62 @@
+Project Structure :
+
+RootProject/
+│
+├── CMakeLists.txt                #Root-level CMake
+│
+├── include/
+│   └── audio_processing.h
+│
+├── src/
+│   ├── audio_processing.cpp
+│   └── CMakeLists.txt
+│
+├── 3rdParty/
+│   ├── CMakeLists.txt
+│   └── webrtc/
+│
+└── test/
+    ├── CMakeLists.txt            #Test-level CMake
+    ├── Simple/
+    │   ├── main.cpp
+    │   └── CMakeLists.txt
+    │
+    └── qt/
+        ├── client/
+        │   ├── main.cpp
+        │   └── CMakeLists.txt
+        │
+        ├── server/
+        │   ├── main.cpp
+        │   └── CMakeLists.txt
+        │
+        ├── CMakeLists.txt
+        └── README.md
+
+
+
+Cloning including the webrtc code:
+
+`git clone --recursive https://github.com/Amir-r-zare/Audio_processing.git`
+
+
+After cloning:
+
+`git submodule update --init --recursive`
+
+
+for buil the Project :
+-   mkdir -p build
+-   cd build
+-   cmake ..
+-   make -j$(nproc)
+
+
+
+
+
+
+
 # Qt Client/Server Test
 
 This project demonstrates a simple TCP client-server architecture using **Qt5** (`QtNetwork` module).
@@ -9,23 +68,6 @@ The test is divided into two parts:
 
 Both the client and server use Qt's `QTcpSocket` and `QTcpServer` for communication. 
 The IP address and port must be passed via command line arguments at runtime.
-
-
-Folder Structure :
-
-test/
-└── qt/
-├── client/
-│ ├── main.cpp
-│ └── CMakeLists.txt
-│
-├── server/
-│ ├── main.cpp
-│ └── CMakeLists.txt
-│
-├── CMakeLists.txt
-└── README.md
-
 
 
 ## Build Instructions
