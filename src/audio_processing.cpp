@@ -9,11 +9,54 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstring>
+#include <algorithm>
 #include <variant>
 
+class AudioProcessing::AudioProcessingPrivate {
+public:
+    AudioProcessingPrivate();
+    ~AudioProcessingPrivate();
 
+    // Configuration members
+    int sample_rate_;
+    int system_delay_ms_;
+    int noise_suppression_level_;
+    int aec_level_;
+    int voice_detection_level_;
+    bool enable_aec_;
+    bool enable_agc_;
+    bool enable_hp_filter_;
+    bool enable_noise_suppression_;
+    bool enable_transient_suppression_;
+    bool aec_delay_agnostic_;
+    bool aec_extended_filter_;
+    bool enable_voice_detection_;
+    int agc_mode_;
 
-AudioProcessing::AudioProcessing()
+    // WebRTC objects
+    std::unique_ptr<webrtc::AudioProcessing> audio_processor_;
+    std::unique_ptr<webrtc::StreamConfig> stream_config_in_;
+    std::unique_ptr<webrtc::StreamConfig> stream_config_out_;
+
+    // Buffers
+    std::vector<float> near_float_data_;
+    std::vector<float> far_float_data_;
+    std::vector<float> out_float_data_;
+    std::unique_ptr<webrtc::ChannelBuffer<float>> near_chan_buf_;
+    std::unique_ptr<webrtc::ChannelBuffer<float>> far_chan_buf_;
+    std::unique_ptr<webrtc::ChannelBuffer<float>> out_chan_buf_;
+
+    // Processing state
+    size_t num_chunk_samples_;
+    bool is_started_;
+
+    // Methods
+    void configureProcessing();
+    void validateInputSizes(const std::vector<int16_t>& near_in,
+                           const std::vector<int16_t>& far_in) const;
+};
+
+AudioProcessing::AudioProcessingPrivate::AudioProcessingPrivate()
     : sample_rate_(16000)
     , system_delay_ms_(0)
     , noise_suppression_level_(NS_LEVEL_MODERATE)
@@ -28,125 +71,35 @@ AudioProcessing::AudioProcessing()
     , aec_extended_filter_(false)
     , enable_voice_detection_(false)
     , agc_mode_(AGC_MODE_ADAPTIVE_DIGITAL)
-    , audio_processor_(nullptr)
-    , stream_config_in_(nullptr)
-    , stream_config_out_(nullptr)
-    , near_chan_buf_(nullptr)
-    , far_chan_buf_(nullptr)
-    , out_chan_buf_(nullptr)
     , num_chunk_samples_(0)
     , is_started_(false) {
 }
 
-AudioProcessing::~AudioProcessing() {
-    if (near_chan_buf_) delete static_cast<webrtc::ChannelBuffer<float>*>(near_chan_buf_);
-    if (far_chan_buf_) delete static_cast<webrtc::ChannelBuffer<float>*>(far_chan_buf_);
-    if (out_chan_buf_) delete static_cast<webrtc::ChannelBuffer<float>*>(out_chan_buf_);
-    if (stream_config_in_) delete static_cast<webrtc::StreamConfig*>(stream_config_in_);
-    if (stream_config_out_) delete static_cast<webrtc::StreamConfig*>(stream_config_out_);
-    if (audio_processor_) delete static_cast<webrtc::AudioProcessing*>(audio_processor_);
-
+AudioProcessing::AudioProcessingPrivate::~AudioProcessingPrivate() {
+    // Smart pointers will automatically clean up
 }
 
-bool AudioProcessing::setConfig(int configId, std::variant<int, bool, float> value) {
-    switch (configId) {
-        case SAMPLE_RATE:
-            sample_rate_ = std::get<int>(value);
-            break;
-        case SYSTEM_DELAY_MS:
-            system_delay_ms_ = std::get<int>(value);
-            break;
-        case NOISE_SUPPRESSION_LEVEL:
-            noise_suppression_level_ = std::get<int>(value);
-            break;
-        case AEC_LEVEL:
-            aec_level_ = std::get<int>(value);
-            break;
-        case ENABLE_AEC:
-            enable_aec_ = std::get<bool>(value);
-            break;
-        case ENABLE_AGC:
-            enable_agc_ = std::get<bool>(value);
-            break;
-        case ENABLE_HP_FILTER:
-            enable_hp_filter_ = std::get<bool>(value);
-            break;
-        case ENABLE_NOISE_SUPPRESSION:
-            enable_noise_suppression_ = std::get<bool>(value);
-            break;
-        case ENABLE_TRANSIENT_SUPPRESSION:
-            enable_transient_suppression_ = std::get<bool>(value);
-            break;
-        case AEC_DELAY_AGNOSTIC:
-            aec_delay_agnostic_ = std::get<bool>(value);
-            break;
-        case AEC_EXTENDED_FILTER:
-            aec_extended_filter_ = std::get<bool>(value);
-            break;
-        case ENABLE_VOICE_DETECTION:
-            enable_voice_detection_ = std::get<bool>(value);
-            break;
-        case AGC_MODE:
-            agc_mode_ = std::get<int>(value);
-            break;
-        default:
-            return false;
-    }
-
-    return true;
-}
-
-void AudioProcessing::start() {
-    if (is_started_) return;
-
-    audio_processor_ = webrtc::AudioProcessing::Create();
-    if (!audio_processor_) {
-        return;
-    }
-
-    configureProcessing();
-
-    num_chunk_samples_ = sample_rate_ / 100;
-
-    stream_config_in_ = new webrtc::StreamConfig(sample_rate_, WEBRTC_AEC3_NUM_CHANNELS);
-    stream_config_out_ = new webrtc::StreamConfig(sample_rate_, WEBRTC_AEC3_NUM_CHANNELS);
-
-    // Allocate float buffers
-    near_float_data_.resize(num_chunk_samples_);
-    far_float_data_.resize(num_chunk_samples_);
-    out_float_data_.resize(num_chunk_samples_);
-
-    // Create channel buffers
-    near_chan_buf_ = new webrtc::ChannelBuffer<float>(num_chunk_samples_, WEBRTC_AEC3_NUM_CHANNELS, num_chunk_samples_);
-    far_chan_buf_ = new webrtc::ChannelBuffer<float>(num_chunk_samples_, WEBRTC_AEC3_NUM_CHANNELS, num_chunk_samples_);
-    out_chan_buf_ = new webrtc::ChannelBuffer<float>(num_chunk_samples_, WEBRTC_AEC3_NUM_CHANNELS, num_chunk_samples_);
-
-    is_started_ = true;
-}
-
-void AudioProcessing::configureProcessing() {
+void AudioProcessing::AudioProcessingPrivate::configureProcessing() {
     if (!audio_processor_) return;
-
-    webrtc::AudioProcessing* processor = static_cast<webrtc::AudioProcessing*>(audio_processor_);
 
     // Configure Echo Cancellation (AEC)
     if (enable_aec_) {
-        processor->echo_cancellation()->Enable(true);
-        processor->echo_cancellation()->enable_drift_compensation(false);
-        processor->echo_cancellation()->set_suppression_level(
+        audio_processor_->echo_cancellation()->Enable(true);
+        audio_processor_->echo_cancellation()->enable_drift_compensation(false);
+        audio_processor_->echo_cancellation()->set_suppression_level(
             static_cast<webrtc::EchoCancellation::SuppressionLevel>(aec_level_));
 
         // Configure delay agnostic if supported
         if (aec_delay_agnostic_) {
-            processor->echo_cancellation()->enable_delay_logging(true);
+            audio_processor_->echo_cancellation()->enable_delay_logging(true);
         }
     } else {
-        processor->echo_cancellation()->Enable(false);
+        audio_processor_->echo_cancellation()->Enable(false);
     }
 
     // Configure AGC
     if (enable_agc_) {
-        processor->gain_control()->Enable(true);
+        audio_processor_->gain_control()->Enable(true);
         webrtc::GainControl::Mode agc_webrtc_mode;
         switch (agc_mode_) {
             case AGC_MODE_ADAPTIVE_ANALOG:
@@ -161,14 +114,14 @@ void AudioProcessing::configureProcessing() {
             default:
                 agc_webrtc_mode = webrtc::GainControl::kAdaptiveDigital;
         }
-        processor->gain_control()->set_mode(agc_webrtc_mode);
+        audio_processor_->gain_control()->set_mode(agc_webrtc_mode);
     } else {
-        processor->gain_control()->Enable(false);
+        audio_processor_->gain_control()->Enable(false);
     }
 
     // Configure NS
     if (enable_noise_suppression_) {
-        processor->noise_suppression()->Enable(true);
+        audio_processor_->noise_suppression()->Enable(true);
         webrtc::NoiseSuppression::Level ns_level;
         switch (noise_suppression_level_) {
             case NS_LEVEL_LOW:
@@ -186,21 +139,21 @@ void AudioProcessing::configureProcessing() {
             default:
                 ns_level = webrtc::NoiseSuppression::kModerate;
         }
-        processor->noise_suppression()->set_level(ns_level);
+        audio_processor_->noise_suppression()->set_level(ns_level);
     } else {
-        processor->noise_suppression()->Enable(false);
+        audio_processor_->noise_suppression()->Enable(false);
     }
 
     // Configure HPF
     if (enable_hp_filter_) {
-        processor->high_pass_filter()->Enable(true);
+        audio_processor_->high_pass_filter()->Enable(true);
     } else {
-        processor->high_pass_filter()->Enable(false);
+        audio_processor_->high_pass_filter()->Enable(false);
     }
 
     // Configure Voice Detection
     if (enable_voice_detection_) {
-        processor->voice_detection()->Enable(true);
+        audio_processor_->voice_detection()->Enable(true);
         webrtc::VoiceDetection::Likelihood vad_likelihood;
         switch (voice_detection_level_) {
             case kLowLikelihood:
@@ -215,60 +168,154 @@ void AudioProcessing::configureProcessing() {
             default:
                 vad_likelihood = webrtc::VoiceDetection::kModerateLikelihood;
         }
-        processor->voice_detection()->set_likelihood(vad_likelihood);
+        audio_processor_->voice_detection()->set_likelihood(vad_likelihood);
     } else {
-        processor->voice_detection()->Enable(false);
+        audio_processor_->voice_detection()->Enable(false);
     }
 
     // Set stream delay if needed
     if (system_delay_ms_ > 0) {
-        processor->set_stream_delay_ms(system_delay_ms_);
+        audio_processor_->set_stream_delay_ms(system_delay_ms_);
     }
 }
 
-void AudioProcessing::process(const std::vector<int16_t>& near_in,
-                        const std::vector<int16_t>& far_in,
-                        std::vector<int16_t>& out) {
-    if (!is_started_ || !audio_processor_) {
+void AudioProcessing::AudioProcessingPrivate::validateInputSizes(const std::vector<int16_t>& near_in,
+                                               const std::vector<int16_t>& far_in) const {
+    if (near_in.size() != far_in.size()) {
+        throw std::invalid_argument("Near and far input sizes must match");
+    }
+
+    if (near_in.empty()) {
+        throw std::invalid_argument("Input vectors cannot be empty");
+    }
+}
+
+// AudioProcessing public interface implementation
+AudioProcessing::AudioProcessing() : pImpl(std::make_unique<AudioProcessingPrivate>()) {
+}
+
+AudioProcessing::~AudioProcessing() = default;
+
+bool AudioProcessing::setConfig(int configId, std::variant<int, bool, float> value) {
+    switch (configId) {
+        case SAMPLE_RATE:
+            pImpl->sample_rate_ = std::get<int>(value);
+            break;
+        case SYSTEM_DELAY_MS:
+            pImpl->system_delay_ms_ = std::get<int>(value);
+            break;
+        case NOISE_SUPPRESSION_LEVEL:
+            pImpl->noise_suppression_level_ = std::get<int>(value);
+            break;
+        case AEC_LEVEL:
+            pImpl->aec_level_ = std::get<int>(value);
+            break;
+        case ENABLE_AEC:
+            pImpl->enable_aec_ = std::get<bool>(value);
+            break;
+        case ENABLE_AGC:
+            pImpl->enable_agc_ = std::get<bool>(value);
+            break;
+        case ENABLE_HP_FILTER:
+            pImpl->enable_hp_filter_ = std::get<bool>(value);
+            break;
+        case ENABLE_NOISE_SUPPRESSION:
+            pImpl->enable_noise_suppression_ = std::get<bool>(value);
+            break;
+        case ENABLE_TRANSIENT_SUPPRESSION:
+            pImpl->enable_transient_suppression_ = std::get<bool>(value);
+            break;
+        case AEC_DELAY_AGNOSTIC:
+            pImpl->aec_delay_agnostic_ = std::get<bool>(value);
+            break;
+        case AEC_EXTENDED_FILTER:
+            pImpl->aec_extended_filter_ = std::get<bool>(value);
+            break;
+        case ENABLE_VOICE_DETECTION:
+            pImpl->enable_voice_detection_ = std::get<bool>(value);
+            break;
+        case AGC_MODE:
+            pImpl->agc_mode_ = std::get<int>(value);
+            break;
+        default:
+            return false;
+    }
+
+    return true;
+}
+
+void AudioProcessing::start() {
+    if (pImpl->is_started_) return;
+
+    pImpl->audio_processor_ = std::unique_ptr<webrtc::AudioProcessing>(
+        webrtc::AudioProcessing::Create());
+    if (!pImpl->audio_processor_) {
         return;
     }
 
-    validateInputSizes(near_in, far_in);
+    pImpl->configureProcessing();
+
+    pImpl->num_chunk_samples_ = pImpl->sample_rate_ / 100;
+
+    pImpl->stream_config_in_ = std::make_unique<webrtc::StreamConfig>(
+        pImpl->sample_rate_, WEBRTC_AEC3_NUM_CHANNELS);
+    pImpl->stream_config_out_ = std::make_unique<webrtc::StreamConfig>(
+        pImpl->sample_rate_, WEBRTC_AEC3_NUM_CHANNELS);
+
+    // Allocate float buffers
+    pImpl->near_float_data_.resize(pImpl->num_chunk_samples_);
+    pImpl->far_float_data_.resize(pImpl->num_chunk_samples_);
+    pImpl->out_float_data_.resize(pImpl->num_chunk_samples_);
+
+    // Create channel buffers
+    pImpl->near_chan_buf_ = std::make_unique<webrtc::ChannelBuffer<float>>(
+        pImpl->num_chunk_samples_, WEBRTC_AEC3_NUM_CHANNELS, pImpl->num_chunk_samples_);
+    pImpl->far_chan_buf_ = std::make_unique<webrtc::ChannelBuffer<float>>(
+        pImpl->num_chunk_samples_, WEBRTC_AEC3_NUM_CHANNELS, pImpl->num_chunk_samples_);
+    pImpl->out_chan_buf_ = std::make_unique<webrtc::ChannelBuffer<float>>(
+        pImpl->num_chunk_samples_, WEBRTC_AEC3_NUM_CHANNELS, pImpl->num_chunk_samples_);
+
+    pImpl->is_started_ = true;
+}
+
+void AudioProcessing::process(const std::vector<int16_t>& near_in,
+                             const std::vector<int16_t>& far_in,
+                             std::vector<int16_t>& out) {
+    if (!pImpl->is_started_ || !pImpl->audio_processor_) {
+        return;
+    }
+
+    pImpl->validateInputSizes(near_in, far_in);
 
     // Ensure output vector is properly sized
     out.resize(near_in.size());
-
-    // Cast void pointers to proper types
-    webrtc::AudioProcessing* processor = static_cast<webrtc::AudioProcessing*>(audio_processor_);
-    webrtc::StreamConfig* stream_in = static_cast<webrtc::StreamConfig*>(stream_config_in_);
-    webrtc::StreamConfig* stream_out = static_cast<webrtc::StreamConfig*>(stream_config_out_);
-    webrtc::ChannelBuffer<float>* near_buf = static_cast<webrtc::ChannelBuffer<float>*>(near_chan_buf_);
-    webrtc::ChannelBuffer<float>* far_buf = static_cast<webrtc::ChannelBuffer<float>*>(far_chan_buf_);
-    webrtc::ChannelBuffer<float>* out_buf = static_cast<webrtc::ChannelBuffer<float>*>(out_chan_buf_);
 
     // Process audio in chunks
     size_t samples_processed = 0;
     const size_t total_samples = near_in.size();
 
     while (samples_processed < total_samples) {
-        const size_t samples_to_process = std::min(num_chunk_samples_, total_samples - samples_processed);
+        const size_t samples_to_process = std::min(pImpl->num_chunk_samples_,
+                                                  total_samples - samples_processed);
 
-
+        // Convert int16_t to float
         for (size_t i = 0; i < samples_to_process; ++i) {
-            near_float_data_[i] = static_cast<float>(near_in[samples_processed + i]) / 32768.0f;
-            far_float_data_[i] = static_cast<float>(far_in[samples_processed + i]) / 32768.0f;
+            pImpl->near_float_data_[i] = static_cast<float>(near_in[samples_processed + i]) / 32768.0f;
+            pImpl->far_float_data_[i] = static_cast<float>(far_in[samples_processed + i]) / 32768.0f;
         }
 
+        // Copy to channel buffers
+        std::copy(pImpl->near_float_data_.begin(),
+                  pImpl->near_float_data_.begin() + samples_to_process,
+                  pImpl->near_chan_buf_->channels()[0]);
+        std::copy(pImpl->far_float_data_.begin(),
+                  pImpl->far_float_data_.begin() + samples_to_process,
+                  pImpl->far_chan_buf_->channels()[0]);
 
-        std::copy(near_float_data_.begin(), near_float_data_.begin() + samples_to_process,
-                  near_buf->channels()[0]);
-        std::copy(far_float_data_.begin(), far_float_data_.begin() + samples_to_process,
-                  far_buf->channels()[0]);
-
-
-        int result = processor->ProcessReverseStream(
-            far_buf->channels(), *stream_in, *stream_out,
-            far_buf->channels());
+        // Process reverse stream (far-end/reference)
+        int result = pImpl->audio_processor_->ProcessReverseStream(
+            pImpl->far_chan_buf_->channels(), *pImpl->stream_config_in_,
+            *pImpl->stream_config_out_, pImpl->far_chan_buf_->channels());
 
         if (result != webrtc::AudioProcessing::kNoError) {
             // Handle error
@@ -276,9 +323,9 @@ void AudioProcessing::process(const std::vector<int16_t>& near_in,
         }
 
         // Process forward stream (near-end/microphone)
-        result = processor->ProcessStream(
-            near_buf->channels(), *stream_in, *stream_out,
-            out_buf->channels());
+        result = pImpl->audio_processor_->ProcessStream(
+            pImpl->near_chan_buf_->channels(), *pImpl->stream_config_in_,
+            *pImpl->stream_config_out_, pImpl->out_chan_buf_->channels());
 
         if (result != webrtc::AudioProcessing::kNoError) {
             // Handle error
@@ -287,7 +334,7 @@ void AudioProcessing::process(const std::vector<int16_t>& near_in,
 
         // Convert float back to int16_t
         for (size_t i = 0; i < samples_to_process; ++i) {
-            float sample = out_buf->channels()[0][i];
+            float sample = pImpl->out_chan_buf_->channels()[0][i];
             // Clamp to [-1.0, 1.0] and convert to int16_t
             sample = std::max(-1.0f, std::min(1.0f, sample));
             out[samples_processed + i] = static_cast<int16_t>(sample * 32767.0f);
@@ -298,8 +345,8 @@ void AudioProcessing::process(const std::vector<int16_t>& near_in,
 }
 
 bool AudioProcessing::processRawBytes(const uint8_t* nearBytes, size_t nearByteCount,
-                                const uint8_t* farBytes, size_t farByteCount,
-                                std::vector<int16_t>& out) {
+                                     const uint8_t* farBytes, size_t farByteCount,
+                                     std::vector<int16_t>& out) {
     if (!nearBytes || !farBytes || nearByteCount == 0 || farByteCount == 0) {
         return false;
     }
@@ -335,38 +382,25 @@ bool AudioProcessing::processRawBytes(const uint8_t* nearBytes, size_t nearByteC
     return true;
 }
 
-void AudioProcessing::validateInputSizes(const std::vector<int16_t>& near_in,
-                                   const std::vector<int16_t>& far_in) const {
-    if (near_in.size() != far_in.size()) {
-        throw std::invalid_argument("Near and far input sizes must match");
-    }
-
-    if (near_in.empty()) {
-        throw std::invalid_argument("Input vectors cannot be empty");
-    }
-}
-
 bool AudioProcessing::hasVoice() const {
-    if (!audio_processor_ || !enable_voice_detection_) {
+    if (!pImpl->audio_processor_ || !pImpl->enable_voice_detection_) {
         return false;
     }
 
-    webrtc::AudioProcessing* processor = static_cast<webrtc::AudioProcessing*>(audio_processor_);
-    return processor->voice_detection()->stream_has_voice();
+    return pImpl->audio_processor_->voice_detection()->stream_has_voice();
 }
 
 bool AudioProcessing::hasEcho() const {
-    if (!audio_processor_ || !enable_aec_) {
+    if (!pImpl->audio_processor_ || !pImpl->enable_aec_) {
         return false;
     }
 
-    webrtc::AudioProcessing* processor = static_cast<webrtc::AudioProcessing*>(audio_processor_);
     // Check if echo cancellation is processing
-    return processor->echo_cancellation()->is_enabled();
+    return pImpl->audio_processor_->echo_cancellation()->is_enabled();
 }
 
 float AudioProcessing::getSpeechProbability() const {
-    if (!audio_processor_ || !enable_voice_detection_) {
+    if (!pImpl->audio_processor_ || !pImpl->enable_voice_detection_) {
         return 0.0f;
     }
     return hasVoice() ? 1.0f : 0.0f;
