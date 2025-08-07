@@ -1,13 +1,6 @@
-cmake_minimum_required(VERSION 3.10)
-
 project(AudioProcessingWrapper LANGUAGES CXX)
-
 include_directories(${CMAKE_SOURCE_DIR}/include)
-
 include_directories(${CMAKE_SOURCE_DIR}/3rdParty/webrtc)
-
 add_library(Audio_Processing STATIC audio_processing.cpp)
-
 target_link_libraries(Audio_Processing PRIVATE AudioProcessingLin pthread)
-
 target_include_directories(Audio_Processing PUBLIC ${PROJECT_SOURCE_DIR}/include)
