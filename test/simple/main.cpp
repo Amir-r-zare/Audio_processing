@@ -28,7 +28,7 @@ int main() {
     std::vector<uint8_t> nearBytes;
     std::vector<uint8_t> farBytes;
     generateTestSignal(nearBytes);
-    generateTestSignal(farBytes);  // برای تست می‌تونی همین سیگنال رو دوباره استفاده کنی
+    generateTestSignal(farBytes);
 
     AudioProcessing processor;
     processor.setConfig(AudioProcessing::SAMPLE_RATE, 16000);
